@@ -2,10 +2,12 @@ package validator
 
 import "regexp"
 
-//var (
-//	// EmailRX is a regular expression which confirms the validity of an email input.
-//	EmailRX = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+\\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\. [a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
-//)
+var (
+
+	//	EmailRX is a regular expression which confirms the validity of an email input.
+	//EmailRX = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+\\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\. [a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
+	EmailRX = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+\\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
+)
 
 // Validator provides an error map for mapping error values encountered
 type Validator struct {
@@ -48,7 +50,7 @@ func In(value string, list ...string) bool {
 
 // Matches uses Regular Expressions to check a value
 func Matches(value string, rx *regexp.Regexp) bool {
-	return rx.MatchString(value)
+	return rx.MatchString(value) //282
 }
 
 // Unique checks all values in a slice are unique

@@ -20,10 +20,10 @@ const (
 	LevelOff                //3
 )
 
-// String prints a human readable string.
+// String prints a human-readable string.
 func (l Level) String() string {
 	switch l {
-	case LevelOff:
+	case LevelInfo:
 		return "INFO"
 	case LevelError:
 		return "ERROR"
@@ -76,11 +76,11 @@ func (l *Logger) print(level Level, message string, properties map[string]string
 	}
 
 	aux := struct {
-		Level      string
-		Time       string
-		Message    string
-		Properties map[string]string
-		Trace      string // Not for LevelInfo
+		Level      string            `json:"level"`
+		Time       string            `json:"time"`
+		Message    string            `json:"message"`
+		Properties map[string]string `json:"properties,omitempty"`
+		Trace      string            `json:"trace,omitempty"` // Not for LevelInfo
 	}{
 		Level:      level.String(),
 		Time:       time.Now().Format(time.RFC3339), // return time at UTC
@@ -102,10 +102,11 @@ func (l *Logger) print(level Level, message string, properties map[string]string
 
 	l.mu.Lock()
 	defer l.mu.Unlock()
-
 	return l.out.Write(append(line, '\n'))
+
 }
 
+// Satisifes error for logging errors
 func (l *Logger) Write(message []byte) (n int, err error) {
 	return l.print(LevelError, string(message), nil)
 }

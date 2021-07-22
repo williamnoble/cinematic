@@ -39,6 +39,8 @@ func (app *application) writeJSON(w http.ResponseWriter, status int, data interf
 		w.Header()[key] = value
 	}
 
+	// We cannot set the header after called to WriteHeader or Write. We cannot Write the Header after Writing to
+	// ResponseWriter. Calls to w.Write without w.WriteHeader will return http.StatusOK.
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	w.Write(js)
@@ -121,4 +123,17 @@ func (app *application) readInt(qs url.Values, key string, defaultValue int, v *
 		return defaultValue
 	}
 	return i
+
+}
+func (app *application) background(fn func()) {
+	app.wg.Add(1)
+	go func() {
+		defer app.wg.Done()
+		defer func() {
+			if err := recover(); err != nil {
+				app.logger.PrintFatal(fmt.Errorf("%s", err), nil)
+			}
+		}()
+		fn()
+	}()
 }

@@ -9,6 +9,7 @@ import (
 )
 
 func (app *application) createMovieHandler(w http.ResponseWriter, r *http.Request) {
+
 	var input struct {
 		Title   string       `json:"title,omitempty"`
 		Year    int32        `json:"year,omitempty"`
@@ -57,6 +58,7 @@ func (app *application) showMovieHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	app.logger.PrintInfo(string(id), nil)
 	movie, err := app.models.Movies.Get(id)
 	if err != nil {
 		switch {
@@ -105,6 +107,7 @@ func (app *application) updateMovieHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	// Set values on input Struct to pointers to allow evaluating values as nil.
 	if input.Title != nil {
 		movie.Title = *input.Title
 	}

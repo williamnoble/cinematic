@@ -4,12 +4,12 @@ import (
 	"context"
 	"database/sql"
 	"flag"
-	"fmt"
 	_ "github.com/lib/pq"
 	"greenlight/internal/data"
-	"log"
-	"net/http"
+	"greenlight/internal/jsonlog"
+	"greenlight/internal/mailer"
 	"os"
+	"sync"
 	"time"
 )
 
@@ -24,12 +24,26 @@ type config struct {
 		maxIdleConns int
 		maxIdleTime  string
 	}
+	limiter struct {
+		rps     float64
+		burst   int
+		enabled bool
+	}
+	smtp struct {
+		host     string
+		port     int
+		username string
+		password string
+		sender   string
+	}
 }
 
 type application struct {
 	config config
-	logger *log.Logger
+	logger *jsonlog.Logger
 	models data.Models
+	mailer mailer.Mailer
+	wg     sync.WaitGroup
 }
 
 func main() {
@@ -42,35 +56,39 @@ func main() {
 	flag.IntVar(&cfg.db.maxOpenConns, "db-max-open-conns", 25, "PostreSQL max open connections")
 	flag.IntVar(&cfg.db.maxIdleConns, "db-max-idle-conns", 25, "PostreSQL max idle connections")
 	flag.StringVar(&cfg.db.maxIdleTime, "db-max-idle-time", "15m", "PostreSQL max idle time")
+	flag.Float64Var(&cfg.limiter.rps, "limiter-rps", 2, "rate limiter max requests per second")
+	flag.IntVar(&cfg.limiter.burst, "limited-burst", 4, "rate limiter max burst")
+	flag.BoolVar(&cfg.limiter.enabled, "limiter-enabled", true, "Enable rate limiter")
+
+	flag.StringVar(&cfg.smtp.host, "smtp-host", "smtp.mailtrap.io", "SMTP host")
+	flag.IntVar(&cfg.smtp.port, "smtp-port", 25, "SMTP Port")
+	flag.StringVar(&cfg.smtp.username, "smtp-username", "a1b0cb6557b1d4", "SMTP Username")
+	flag.StringVar(&cfg.smtp.password, "smtp-password", "16a2d04fff3deb", "SMTP Password")
+	flag.StringVar(&cfg.smtp.sender, "smtp-sender", "William@WillsApp.com", "SMTP sender")
 
 	flag.Parse()
-	logger := log.New(os.Stdout, "", log.Ldate|log.Ltime)
-
+	//logger := log.New(os.Stdout, "", log.Ldate|log.Ltime)
+	logger := jsonlog.New(os.Stdout, jsonlog.LevelInfo)
 	db, err := openDB(cfg)
 	if err != nil {
-		logger.Fatal(err)
+		logger.PrintFatal(err, nil)
 	}
 
 	defer db.Close()
-	logger.Printf("database connection pool established")
+	logger.PrintInfo("database connection pool established", nil)
 
 	app := application{
 		config: cfg,
 		logger: logger,
 		models: data.NewModels(db),
-	}
-	
-	svr := &http.Server{
-		Addr:         fmt.Sprintf(":%d", cfg.port),
-		Handler:      app.routes(),
-		WriteTimeout: 10 * time.Second,
-		ReadTimeout:  10 * time.Second,
-		IdleTimeout:  time.Minute,
+		mailer: mailer.New(cfg.smtp.host, cfg.smtp.port, cfg.smtp.username, cfg.smtp.password, cfg.smtp.sender),
 	}
 
-	logger.Printf("starting %s server on %s", cfg.env, svr.Addr)
-	err = svr.ListenAndServe()
-	logger.Fatal(err)
+	err = app.serve()
+	if err != nil {
+		logger.PrintFatal(err, nil)
+	}
+
 }
 
 func openDB(cfg config) (*sql.DB, error) {
@@ -82,6 +100,7 @@ func openDB(cfg config) (*sql.DB, error) {
 	db.SetMaxOpenConns(cfg.db.maxOpenConns)
 	db.SetMaxIdleConns(cfg.db.maxIdleConns)
 
+	// parse a string duration.
 	duration, err := time.ParseDuration(cfg.db.maxIdleTime)
 	if err != nil {
 		return nil, err

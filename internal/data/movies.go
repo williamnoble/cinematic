@@ -20,34 +20,6 @@ var (
 	ErrEditConflict   = errors.New("edit conflict")
 )
 
-// Movie describes an individual film entry within Movies database
-type Movie struct {
-	ID        int64     `json:"id"`
-	CreatedAt time.Time `json:"-"`
-	Title     string    `json:"title"`
-	Year      int32     `json:"year,omitempty"`
-	Runtime   Runtime   `json:"runtime,omitempty"` // declare in runtime.go
-	Genres    []string  `json:"genres,omitempty"`
-	Version   int32     `json:"version"`
-}
-
-// Models acts as a container for different data models (Movies & Users)
-type Models struct {
-	Movies MovieModel
-}
-
-// NewModels returns an instance of Models which holds all our data models.
-func NewModels(db *sql.DB) Models {
-	return Models{
-		Movies: MovieModel{DB: db},
-	}
-}
-
-// MovieModel is a struct which holds the database connection for Movies.
-type MovieModel struct {
-	DB *sql.DB
-}
-
 // Insert creates a new Movie within the MovieModel database.
 func (m MovieModel) Insert(movie *Movie) error {
 	query := `
