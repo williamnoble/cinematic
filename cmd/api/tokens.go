@@ -2,8 +2,8 @@ package main
 
 import (
 	"errors"
-	"greenlight/internal/data"
-	"greenlight/internal/validator"
+	"movieDB/internal/data"
+	"movieDB/internal/validator"
 	"net/http"
 	"time"
 )

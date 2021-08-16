@@ -5,6 +5,7 @@ import (
 	"net/http"
 )
 
+// logError records an error to jsonLog detailing request: method, url.
 func (app *application) logError(r *http.Request, err error) {
 	app.logger.PrintError(err, map[string]string{
 		"request_method": r.Method,
@@ -12,8 +13,8 @@ func (app *application) logError(r *http.Request, err error) {
 	})
 }
 
-// ** TEMPLATE FOR ERRORS **
-// errorResponse is the main response template
+// errorResponse acts as a template for constructing a client response, it receives an HTTP status code and any data
+// to pass to the JSON response.
 func (app *application) errorResponse(w http.ResponseWriter, r *http.Request, status int, message interface{}) {
 	env := envelope{"error": message}
 
@@ -23,6 +24,8 @@ func (app *application) errorResponse(w http.ResponseWriter, r *http.Request, st
 		w.WriteHeader(http.StatusInternalServerError) //500
 	}
 }
+
+// errorPartials
 
 func (app *application) serverErrorResponse(w http.ResponseWriter, r *http.Request, err error) {
 	app.logError(r, err)
@@ -75,5 +78,10 @@ func (app *application) authenticationRequiredResponse(w http.ResponseWriter, r 
 
 func (app *application) inactiveAccountResponse(w http.ResponseWriter, r *http.Request) {
 	message := "your account must be activated to access this resource"
+	app.errorResponse(w, r, http.StatusForbidden, message)
+}
+
+func (app *application) notPermittedResponse(w http.ResponseWriter, r *http.Request) {
+	message := "your account does not have sufficient permission to access this resource"
 	app.errorResponse(w, r, http.StatusForbidden, message)
 }

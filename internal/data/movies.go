@@ -10,7 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/lib/pq"
-	"greenlight/internal/validator"
+	"movieDB/internal/validator"
 	"time"
 )
 

@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"golang.org/x/time/rate"
-	"greenlight/internal/data"
-	"greenlight/internal/validator"
+	"movieDB/internal/data"
+	"movieDB/internal/validator"
 	"net"
 	"net/http"
 	"strings"
@@ -13,11 +13,13 @@ import (
 	"time"
 )
 
+// middleware to gracefully handle a panic. Within a goroutine a panic may close the goroutine but not notify the user
+// of what happened. recoverPanic ensures that the client is informed of an internal server error.
 func (app *application) recoverPanic(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			if err := recover(); err != nil {
-				w.Header().Set("Conncetion", "close")
+				w.Header().Set("Connection", "close")
 				app.serverErrorResponse(w, r, fmt.Errorf("%s", err))
 			}
 		}()
@@ -26,6 +28,8 @@ func (app *application) recoverPanic(next http.Handler) http.Handler {
 	})
 }
 
+// A basic rate limiter which maps client ip to the stdlib rate limiter. A client is permitted upto four requests
+// per second before being limited. Limiting for testing can be enabled or disabled through argument.
 func (app *application) rateLimit(next http.Handler) http.Handler {
 
 	type client struct {
@@ -127,7 +131,7 @@ func (app *application) authenticate(next http.Handler) http.Handler {
 	})
 }
 
-func (app *application) requireActivatedUser(next http.HandlerFunc) http.HandlerFunc {
+func (app *application) requireAuthenticatedUser(next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		user := app.contextGetUser(r)
 
@@ -135,6 +139,13 @@ func (app *application) requireActivatedUser(next http.HandlerFunc) http.Handler
 			app.authenticationRequiredResponse(w, r)
 			return
 		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (app *application) requireActivatedUser(next http.HandlerFunc) http.HandlerFunc {
+	fn := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		user := app.contextGetUser(r)
 
 		if !user.Activated {
 			app.inactiveAccountResponse(w, r)
@@ -143,4 +154,25 @@ func (app *application) requireActivatedUser(next http.HandlerFunc) http.Handler
 
 		next.ServeHTTP(w, r)
 	})
+
+	return app.requireAuthenticatedUser(fn)
+}
+
+func (app *application) requirePermission(code string, next http.HandlerFunc) http.HandlerFunc {
+	fn := func(w http.ResponseWriter, r *http.Request) {
+		user := app.contextGetUser(r)
+		permissions, err := app.models.Permissions.GetAllForUser(user.ID)
+		if err != nil {
+			app.serverErrorResponse(w, r, err)
+			return
+		}
+		if !permissions.Include(code) {
+			app.notPermittedResponse(w, r)
+			return
+		}
+		next.ServeHTTP(w, r)
+
+	}
+
+	return app.requireActivatedUser(fn)
 }

@@ -2,20 +2,22 @@ package main
 
 import (
 	"context"
-	"greenlight/internal/data"
+	"movieDB/internal/data"
 	"net/http"
 )
 
-// customContextKey to avoid name collison. Set the user context as type: contextKey.
+// contextKey avoids naming collision. Set the user context as type: contextKey.
 type contextKey string
 
 const userContextKey = contextKey("users")
 
-// Return a new Context with the "User" embedded with a userContextKey
+// Return a new Context with User embedded in the contextKey.
 func (app *application) contextSetUser(r *http.Request, user *data.User) *http.Request {
 	ctx := context.WithValue(r.Context(), userContextKey, user)
 	return r.WithContext(ctx)
 }
+
+// Retrieve the user from the current context.
 func (app *application) contextGetUser(r *http.Request) *data.User {
 	//
 	user, ok := r.Context().Value(userContextKey).(*data.User)

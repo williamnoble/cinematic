@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/julienschmidt/httprouter"
-	"greenlight/internal/validator"
 	"io"
+	"movieDB/internal/validator"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -15,6 +15,7 @@ import (
 
 type envelope map[string]interface{}
 
+//readIDParam reads a parameter "ID" from the given context e.g. "/api/users/1/ => 1" and returns an int64.
 func (app *application) readIDParam(r *http.Request) (int64, error) {
 	params := httprouter.ParamsFromContext(r.Context())
 
@@ -26,6 +27,7 @@ func (app *application) readIDParam(r *http.Request) (int64, error) {
 	return id, nil
 }
 
+//writeJSON is response for writing the HTTP response. It takes an HTTP Status, a header map and any requested data.
 func (app *application) writeJSON(w http.ResponseWriter, status int, data interface{}, headers http.Header) error {
 	js, err := json.MarshalIndent(data, "", "\t")
 	if err != nil {
@@ -102,6 +104,7 @@ func (app *application) readString(qs url.Values, key string, defaultValue strin
 	return s
 }
 
+//readCSV is a small helper to read a list from the query
 func (app *application) readCSV(qs url.Values, key string, defaultValue []string) []string {
 	csv := qs.Get(key)
 	if csv == "" {
@@ -111,6 +114,7 @@ func (app *application) readCSV(qs url.Values, key string, defaultValue []string
 	return strings.Split(csv, ",")
 }
 
+//readCSV is a small helper to read an integer from the query
 func (app *application) readInt(qs url.Values, key string, defaultValue int, v *validator.Validator) int {
 	s := qs.Get(key)
 	if s == "" {
@@ -125,6 +129,9 @@ func (app *application) readInt(qs url.Values, key string, defaultValue int, v *
 	return i
 
 }
+
+// background is construct of graceful shutdown. It calls the anonymous function before dealing with recover.
+// This may or may not give the function sufficient time to complete.
 func (app *application) background(fn func()) {
 	app.wg.Add(1)
 	go func() {

@@ -2,8 +2,8 @@ package main
 
 import (
 	"errors"
-	"greenlight/internal/data"
-	"greenlight/internal/validator"
+	"movieDB/internal/data"
+	"movieDB/internal/validator"
 	"net/http"
 	"time"
 )
@@ -56,6 +56,12 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	err = app.models.Permissions.AddForUser(user.ID, "movies:read")
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
 	// Generate a token for the user and save that token to the tokens table. Provide the User ID, a sensible
 	// TTL for the lifespan of the token and a scope which is 'Activation' for this handler.
 	token, err := app.models.Tokens.New(user.ID, 3*24*time.Hour, data.ScopeActivation)
@@ -67,13 +73,13 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 	// Graceful shutdown of mailer go routine. Our token contains both a plaintext token and a hash of the token. We
 	// supply the plaintext version of the token to the user via our mailer.
 	app.background(func() {
-		data := map[string]interface{}{
+		templateData := map[string]interface{}{
 			"activationToken": token.Plaintext,
 			"userID":          user.ID,
 		}
 
 		// The user's email, a template, and template data. Todo: Amalgamate template+data
-		err = app.mailer.Send(user.Email, "user_welcome.tmpl", data)
+		err = app.mailer.Send(user.Email, "user_welcome.tmpl", templateData)
 		if err != nil {
 			app.logger.PrintError(err, nil)
 		}

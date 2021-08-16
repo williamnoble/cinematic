@@ -13,7 +13,7 @@ var templateFS embed.FS
 
 type Mailer struct {
 	dialer *mail.Dialer
-	sender string // "Greenlight <no-reply@greenlight.alexedwards.net>"
+	sender string // "Greenlight <no-reply@movieDB.alexedwards.net>"
 }
 
 func New(host string, port int, username, password, sender string) Mailer {

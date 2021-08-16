@@ -5,23 +5,34 @@ import (
 	"time"
 )
 
-// Models acts as a container for different data models (Movies & Users)
+// Models acts as a container to wrap distinct models encapsulating the model definitions.
 type Models struct {
-	Movies MovieModel
-	Users  UserModel
-	Tokens TokenModel
+	Movies      MovieModel
+	Users       UserModel
+	Tokens      TokenModel
+	Permissions PermissionModel
 }
 
 // NewModels returns an instance of Models which holds all our data models.
 func NewModels(db *sql.DB) Models {
 	return Models{
-		Movies: MovieModel{DB: db},
-		Users:  UserModel{DB: db},
-		Tokens: TokenModel{DB: db},
+		Movies:      MovieModel{DB: db},
+		Users:       UserModel{DB: db},
+		Tokens:      TokenModel{DB: db},
+		Permissions: PermissionModel{DB: db},
 	}
 }
 
-// Movie describes an individual film entry within Movies database
+// Token allows a user to both Activate and Authenticate depending on scope.
+type Token struct {
+	Plaintext string    `json:"token"`
+	Hash      []byte    `json:"-"`
+	UserID    int64     `json:"-"` // references User.ID on Users table
+	Expiry    time.Time `json:"expiry"`
+	Scope     string    `json:"-"`
+}
+
+// Movie describes an individual film entry within the movies table.
 type Movie struct {
 	ID        int64     `json:"id"`
 	CreatedAt time.Time `json:"-"`
@@ -32,8 +43,9 @@ type Movie struct {
 	Version   int32     `json:"version"`
 }
 
+// User describes a single user within the users table.
 type User struct {
-	ID        int64     `json:"id""`
+	ID        int64     `json:"id"`
 	CreatedAt time.Time `json:"created_at"`
 	Name      string    `json:"name"`
 	Email     string    `json:"email"`
@@ -55,5 +67,14 @@ type UserModel struct {
 
 // MovieModel holds the datbase pool for the movies table.
 type MovieModel struct {
+	DB *sql.DB
+}
+
+// PermissionModel hols the database pool which is responsible for managing permissions for a given entity.
+type PermissionModel struct {
+	DB *sql.DB
+}
+
+type TokenModel struct {
 	DB *sql.DB
 }

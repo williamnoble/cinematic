@@ -6,7 +6,7 @@ var (
 
 	//	EmailRX is a regular expression which confirms the validity of an email input.
 	//EmailRX = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+\\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\. [a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
-	EmailRX = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+\\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
+	EmailRX = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
 )
 
 // Validator provides an error map for mapping error values encountered
@@ -14,6 +14,7 @@ type Validator struct {
 	Errors map[string]string
 }
 
+//New returns a New Validator with the Errors map initialised.
 func New() *Validator {
 	return &Validator{Errors: make(map[string]string)}
 }
@@ -31,7 +32,6 @@ func (v *Validator) AddError(key, message string) {
 }
 
 // Check (the main function) if error present, call AddError Function
-// v.Check(input.Title != "", "title", "must be provided"
 func (v *Validator) Check(ok bool, key string, message string) {
 	if !ok { //if false
 		v.AddError(key, message)

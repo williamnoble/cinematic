@@ -14,6 +14,7 @@ import (
 
 func (app *application) serve() error {
 
+	// setup basic http server with sensible defaults
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%d", app.config.port),
 		Handler:      app.routes(), //httpRouter has method http.ServerHTTP(wr)
@@ -21,13 +22,17 @@ func (app *application) serve() error {
 		ReadTimeout:  10 * time.Second,
 		IdleTimeout:  time.Minute,
 	}
+	// Graceful Shutdown
+	// 1. Quit Channel listens for incoming-signal
+	// 2. S Blocks & receives Signal struct. 2a. Read String of Signal to infer type of Signal then log.
+	// 3. Begin graceful shutdown of server with 5 second context cancellation.
+	// 4. Wait for srv.Listen&Srv to end block of main goroutine then record shutdown err.
+	// 5. A Graceful shutdown via srv.Shutdown will yield 'ErrServerClosed', the desired response. 5a. Handle other err.
 
 	shutdownError := make(chan error)
-
-	// Check for System Signal
 	go func() {
 		quit := make(chan os.Signal, 1)
-		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM) //ignore SIGQUIT
 		s := <-quit
 
 		app.logger.PrintInfo("shutting down server", map[string]string{

@@ -3,8 +3,8 @@ package main
 import (
 	"errors"
 	"fmt"
-	"greenlight/internal/data"
-	"greenlight/internal/validator"
+	"movieDB/internal/data"
+	"movieDB/internal/validator"
 	"net/http"
 )
 
@@ -58,7 +58,7 @@ func (app *application) showMovieHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	app.logger.PrintInfo(string(id), nil)
+	//app.logger.PrintInfo(string(id), nil)
 	movie, err := app.models.Movies.Get(id)
 	if err != nil {
 		switch {

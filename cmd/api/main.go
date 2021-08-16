@@ -5,9 +5,9 @@ import (
 	"database/sql"
 	"flag"
 	_ "github.com/lib/pq"
-	"greenlight/internal/data"
-	"greenlight/internal/jsonlog"
-	"greenlight/internal/mailer"
+	"movieDB/internal/data"
+	"movieDB/internal/jsonlog"
+	"movieDB/internal/mailer"
 	"os"
 	"sync"
 	"time"
@@ -19,10 +19,10 @@ type config struct {
 	port int
 	env  string
 	db   struct {
-		dsn          string
-		maxOpenConns int
-		maxIdleConns int
-		maxIdleTime  string
+		dsn         string
+		maxOpenConn int
+		maxIdleConn int
+		maxIdleTime string
 	}
 	limiter struct {
 		rps     float64
@@ -53,9 +53,9 @@ func main() {
 
 	flag.StringVar(&cfg.db.dsn, "db-dsn", os.Getenv("GREENLIGHT_DB_DSN"), "PostgresSQL DSN")
 
-	flag.IntVar(&cfg.db.maxOpenConns, "db-max-open-conns", 25, "PostreSQL max open connections")
-	flag.IntVar(&cfg.db.maxIdleConns, "db-max-idle-conns", 25, "PostreSQL max idle connections")
-	flag.StringVar(&cfg.db.maxIdleTime, "db-max-idle-time", "15m", "PostreSQL max idle time")
+	flag.IntVar(&cfg.db.maxOpenConn, "db-max-open-conn", 25, "PostgreSQL max open connections")
+	flag.IntVar(&cfg.db.maxIdleConn, "db-max-idle-conn", 25, "PostgreSQL max idle connections")
+	flag.StringVar(&cfg.db.maxIdleTime, "db-max-idle-time", "15m", "PostgreSQL max idle time")
 	flag.Float64Var(&cfg.limiter.rps, "limiter-rps", 2, "rate limiter max requests per second")
 	flag.IntVar(&cfg.limiter.burst, "limited-burst", 4, "rate limiter max burst")
 	flag.BoolVar(&cfg.limiter.enabled, "limiter-enabled", true, "Enable rate limiter")
@@ -67,7 +67,6 @@ func main() {
 	flag.StringVar(&cfg.smtp.sender, "smtp-sender", "William@WillsApp.com", "SMTP sender")
 
 	flag.Parse()
-	//logger := log.New(os.Stdout, "", log.Ldate|log.Ltime)
 	logger := jsonlog.New(os.Stdout, jsonlog.LevelInfo)
 	db, err := openDB(cfg)
 	if err != nil {
@@ -97,8 +96,8 @@ func openDB(cfg config) (*sql.DB, error) {
 		return nil, err
 	}
 
-	db.SetMaxOpenConns(cfg.db.maxOpenConns)
-	db.SetMaxIdleConns(cfg.db.maxIdleConns)
+	db.SetMaxOpenConns(cfg.db.maxOpenConn)
+	db.SetMaxIdleConns(cfg.db.maxIdleConn)
 
 	// parse a string duration.
 	duration, err := time.ParseDuration(cfg.db.maxIdleTime)

@@ -4,30 +4,19 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/sha256"
-	"database/sql"
 	"encoding/base32"
-	"greenlight/internal/validator"
+	"movieDB/internal/validator"
 	"time"
 )
 
-// it is ESSENTIAL we reference crypto/rand and not math/rand.
-
+//ScopeActivation provides the string for Activation context.
 const ScopeActivation = "activation"
+
+//ScopeAuthentication provides the string for Authentication context.
 const ScopeAuthentication = "authentication"
 
-// Token allows a user to both Activate and Authenticate depending on scope.
-type Token struct {
-	Plaintext string    `json:"token"`
-	Hash      []byte    `json:"-"`
-	UserID    int64     `json:"-"` // references User.ID on Users table
-	Expiry    time.Time `json:"expiry"`
-	Scope     string    `json:"-"`
-}
-
-type TokenModel struct {
-	DB *sql.DB
-}
-
+//ValidateTokenPlaintext validates input for the token in plaintext. If a case fails then the Validator adds an error
+// entry to the Validator map
 func ValidateTokenPlaintext(v *validator.Validator, tokenPlainText string) {
 	v.Check(tokenPlainText != "", "token", "must be provided")
 	v.Check(len(tokenPlainText) == 26, "token", "must be 26 bytes long")
@@ -35,6 +24,7 @@ func ValidateTokenPlaintext(v *validator.Validator, tokenPlainText string) {
 
 // Make a random Key, Convert to Base32, Generate 256 Hash for Token table.
 // Scope: Activation OR Authentication. TTL 3 days for Activation, Auth = 30mins.
+// it is ESSENTIAL we reference crypto/rand and not math/rand.
 func generateToken(userID int64, ttl time.Duration, scope string) (*Token, error) {
 
 	randomBytes := make([]byte, 16)

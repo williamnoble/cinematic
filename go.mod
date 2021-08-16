@@ -1,4 +1,4 @@
-module greenlight
+module movieDB
 
 go 1.16
 

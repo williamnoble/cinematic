@@ -6,14 +6,17 @@ import (
 	"database/sql"
 	"errors"
 	"golang.org/x/crypto/bcrypt"
-	"greenlight/internal/validator"
+	"movieDB/internal/validator"
 	"time"
 )
 
 var (
-	ErrDuplicatedEmail = errors.New("error duplcicated")
+
+	//ErrDuplicatedEmail describes an error associated with the table containing a duplicated email address
+	ErrDuplicatedEmail = errors.New("error duplicated email address")
 )
 
+//Insert inserts a User into the users table.
 func (m *UserModel) Insert(user *User) error {
 	query := `
 	INSERT INTO users (name, email, password_hash, activated)
@@ -40,6 +43,7 @@ func (m *UserModel) Insert(user *User) error {
 	return nil
 }
 
+//GetByEmail returns a user for a given email address.
 func (m *UserModel) GetByEmail(email string) (*User, error) {
 	query := `SELECT id, created_at, name, email, password_hash, activated, version 
 	FROM users
@@ -70,6 +74,8 @@ func (m *UserModel) GetByEmail(email string) (*User, error) {
 	return &user, nil
 }
 
+//Update will update the user, it ensures that the user does not try to change their email to one already in the
+// database.
 func (m *UserModel) Update(user *User) error {
 	query := `
 	UPDATE users SET 
@@ -95,7 +101,7 @@ func (m *UserModel) Update(user *User) error {
 		switch {
 		case err.Error() == `pq: duplicate key value violates unique constraint "users_email_key"`:
 			return ErrDuplicatedEmail
-		case errors.Is(err, sql.ErrNoRows): // returne by .Scan
+		case errors.Is(err, sql.ErrNoRows): //
 			return ErrEditConflict
 		default:
 			return err
@@ -109,6 +115,7 @@ type password struct {
 	hash      []byte
 }
 
+//Set is responsible for returning a hash of the plaintext password and storing both within User Password field.
 func (p *password) Set(plaintextPassword string) error {
 	hash, err := bcrypt.GenerateFromPassword([]byte(plaintextPassword), 12)
 	if err != nil {
@@ -120,6 +127,8 @@ func (p *password) Set(plaintextPassword string) error {
 	return nil
 }
 
+//Matches compares a plaintext password which is then hashed with the hashed password within the users table. It returns
+// true if the passwords match otherwise it returns ErrMismatchedHashAndPassword if bcrypt does not find a match.
 func (p *password) Matches(plaintextPassword string) (bool, error) {
 	err := bcrypt.CompareHashAndPassword(p.hash, []byte(plaintextPassword))
 	if err != nil {
@@ -133,11 +142,14 @@ func (p *password) Matches(plaintextPassword string) (bool, error) {
 	return true, nil
 }
 
+//ValidateEmail validates the user email against a regular expression for an email address.
 func ValidateEmail(v *validator.Validator, email string) {
 	v.Check(email != "", "email", "must be provided")
 	v.Check(validator.Matches(email, validator.EmailRX), "email", "must be a valid email address")
 }
 
+//ValidatePasswordPlaintext validates a password input from the User. It ensures the password isn't empty, and it is
+// the correct length.
 func ValidatePasswordPlaintext(v *validator.Validator, password string) {
 	v.Check(password != "", "password", "must be provided")
 	v.Check(len(password) >= 8, "password", "password must be longer than 8 characters")
@@ -158,9 +170,10 @@ func ValidateUser(v *validator.Validator, user *User) {
 	}
 }
 
+//GetForToken returns the User for a given Token and Scope i.e. Authentication or Authorization scope.
 func (m UserModel) GetForToken(tokenScope, tokenPlaintext string) (*User, error) {
-	// GetForToken recieved the plaintext input token from user. Obtain the SHA256 Hash of this token for
-	// compaison to the one contained in the user table.
+	// GetForToken received the plaintext input token from user. Obtain the SHA256 Hash of this token for
+	// comparison to the one contained in the user table.
 	tokenHash := sha256.Sum256([]byte(tokenPlaintext))
 
 	// Inner Join: Join both tables where the user is found in the token table. Scope is Authorization and
@@ -176,7 +189,7 @@ func (m UserModel) GetForToken(tokenScope, tokenPlaintext string) (*User, error)
 	AND tokens.expiry > $3
 	`
 
-	// Again, tokenhash returns a [32]byte, convert to a slice => [32]byte =>[:]
+	// Again, token hash returns a [32]byte, convert to a slice => [32]byte =>[:]
 	args := []interface{}{tokenHash[:], tokenScope, time.Now()}
 
 	var user User
