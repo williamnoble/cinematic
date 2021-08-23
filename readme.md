@@ -1,8 +1,6 @@
 # MovieDB
 
-Movie DB is a production ready API for a fictional movie REST api. It is written in Go using the Standard Library with
-an exception to the router. I have rested (no pun intended) upon literature from Alex Edwards to whom I attribute a lot
-of my code style.
+Movie DB is a production ready API for a fictional movie REST api. Backend is written in Go, it uses Postgres as a store.
 
 ### Features
 
