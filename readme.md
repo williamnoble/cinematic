@@ -1,6 +1,7 @@
-# MovieDB
+# Cinematic - A Movie Database
 
-Movie DB is a production ready API for a fictional movie REST api. Backend is written in Go, it uses Postgres as a store. Coding style is attributale to alex edwards.
+**Cinematic** is a production rest API backed by a Postgres Store.
+
 
 ### Features
 
@@ -10,5 +11,3 @@ Movie DB is a production ready API for a fictional movie REST api. Backend is wr
     - Authorization
     - Authentication
     - Stateful Tokens
-
-
